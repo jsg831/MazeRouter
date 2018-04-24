@@ -94,7 +94,8 @@ bool Router::find_path( const Node& _source, const Node& _target )
       }
     }
   }
-  return false;
+  /// Return true if the target is visited.
+  return grid.nodes[_target.l][_target.y][_target.x].visited();
 }
 
 void Router::backtrack( const Node& _source, const Node& _target )
