@@ -84,6 +84,13 @@ bool Router::find_path( const Node& _source, const Node& _target )
           else continue;
           break;
       }
+
+      /// Add penalty to cost if not in preferred direction
+      if ( !grid.is_preferred_direction( node.l, dir ) )
+      {
+        node_q.cost += DIR_PENL;
+      }
+
       if ( !grid.nodes[node_q.l][node_q.y][node_q.x].obstacle()
         && node_q.cost < grid.nodes[node_q.l][node_q.y][node_q.x].cost )
       {

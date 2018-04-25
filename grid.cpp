@@ -18,9 +18,10 @@ void Grid::set_axis_y( const std::vector<uint32_t>& _axis_y )
   resize_grid_nodes();
 }
 
-void Grid::set_layers( const uint32_t& _l )
+void Grid::set_layers( const std::vector<bool>& _layers )
 {
-  size_l = _l;
+  size_l = _layers.size();
+  layers = _layers;
   resize_grid_nodes();
 }
 
@@ -44,6 +45,11 @@ uint32_t Grid::get_x_index( const uint32_t& _x )
 uint32_t Grid::get_y_index( const uint32_t& _y )
 {
   return std::upper_bound( axis_y.begin(), axis_y.end(), _y ) - axis_y.begin();
+}
+
+bool Grid::is_preferred_direction( const uint8_t& _l, const uint8_t& _dir )
+{
+  return ((_dir >> 1) == preferred_direction[layers[_l]]);
 }
 
 void Grid::resize_grid_nodes( void )

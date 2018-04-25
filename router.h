@@ -3,7 +3,8 @@
 
 #define DEBUG 1
 
-#define VIA_COST 1
+#define VIA_COST 5
+#define DIR_PENL 100
 
 #include <algorithm>
 #include <bitset>
@@ -50,6 +51,10 @@ private:
 class Grid
 {
 public:
+  /* Constants */
+  /// Preferred directions, y: 01* / x: 10*
+  uint8_t preferred_direction[2] = { 1, 2 };
+
   /* Variables */
   /** Grid Information **/
   /// A 3-dimensional grid node array with size :
@@ -57,6 +62,10 @@ public:
   uint8_t size_l = 0;
   uint32_t size_x = 0;
   uint32_t size_y = 0;
+
+  /// Preferred directions of layers
+  /// 0: prefer y-direction / 1: prefer x-direction
+  std::vector<bool> layers;
 
   /// Two vectors that store the x- and y-values of non-uniform grid axes
   std::vector<uint32_t> axis_x;
@@ -72,7 +81,7 @@ public:
   /** Initializing **/
   void set_axis_x( const std::vector<uint32_t>& _axis_x );
   void set_axis_y( const std::vector<uint32_t>& _axis_y );
-  void set_layers( const uint32_t& _l );
+  void set_layers( const std::vector<bool>& _layers );
 
   /// Add obstacle with two vertices (_l, _ax, _ay) and (_l, _bx, _by)
   void add_obstacle( const uint8_t& _l, const uint32_t& _ax,
@@ -81,6 +90,9 @@ public:
   /** X-/Y-Coordinate to Index Conversion **/
   uint32_t get_x_index( const uint32_t& _x );
   uint32_t get_y_index( const uint32_t& _y );
+
+  /** Preferred Direction **/
+  bool is_preferred_direction( const uint8_t& _l, const uint8_t& _dir );
 
 private:
   /* Functions */
