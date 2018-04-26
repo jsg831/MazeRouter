@@ -6,6 +6,8 @@
 #define D_1_BIT 3
 #define D_2_BIT 4
 #define RTD_BIT 5
+#define SRC_BIT 6
+#define TAR_BIT 7
 
 bool GridNode::obstacle( void )
 {
@@ -35,6 +37,26 @@ bool GridNode::routed( void )
 void GridNode::set_routed( const bool& _flag )
 {
   rt_flags.set( RTD_BIT, _flag );
+}
+
+bool GridNode::source( void )
+{
+  return rt_flags.test( SRC_BIT );
+}
+
+void GridNode::set_source( const bool& _flag )
+{
+  rt_flags.set( SRC_BIT, _flag );
+}
+
+bool GridNode::target( void )
+{
+  return rt_flags.test( TAR_BIT );
+}
+
+void GridNode::set_target( const bool& _flag )
+{
+  rt_flags.set( TAR_BIT, _flag );
 }
 
 uint8_t GridNode::direction( void )

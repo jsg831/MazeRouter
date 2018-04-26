@@ -1,23 +1,97 @@
 #include "router.h"
 
-void Router::add_path( const Node& _source, const Node& _target )
+void Router::add_net( const std::vector<Node>& _pins )
 {
-  if ( find_path( _source, _target ) )
-    backtrack( _source, _target );
-  clear_marks();
+  routed_nets.resize( routed_nets.size() + 1 );
+  Net& net = routed_nets.back();
+
+  /** Pin order for routing **/
+  std::vector<Node> pin_order;
+  std::vector<bool> pin_selected( _pins.size(), 0 );
+  std::vector< std::vector<uint32_t> > dist_matrix;
+
+  /* Set pin order */
+  /// Initialize the adjacent matrix for Prim's algorithm
+  dist_matrix.resize( _pins.size() );
+  for ( auto& row : dist_matrix)
+  {
+    row.resize( _pins.size() );
+  }
+
+  for ( auto i = 0; i < _pins.size(); ++i )
+  {
+    for ( auto j = 0; j < _pins.size(); ++j )
+    {
+      dist_matrix[i][j] = manh_distance( _pins[i], _pins[j] );
+    }
+  }
+
+  /// Prim's algorithm
+  uint32_t p = 0;
+  pin_selected[0] = 1;
+  while ( pin_order.size() != _pins.size() )
+  {
+    uint32_t next_p = 0;
+    uint32_t lowest_dist = UINT32_MAX;
+    for ( auto i = 0; i < _pins.size(); ++i )
+    {
+      if ( pin_selected[i] ) continue;
+      if ( dist_matrix[p][i] < lowest_dist )
+      {
+        lowest_dist = dist_matrix[p][i];
+        next_p = i;
+      }
+    }
+    pin_order.push_back( _pins[next_p] );
+    pin_selected[next_p] = 1;
+    p = next_p;
+  }
+
+  /* Iteratively routing by pin order */
+  bool has_routed = true;
+  grid.nodes[_pins[0].l][_pins[0].y][_pins[0].x].set_target( 1 );
+  for ( const auto& source : pin_order )
+  {
+    Node target;
+    if ( find_target( source, target ) )
+    {
+      backtrack( source, target );
+      clear_visited_marks();
+    } else {
+      has_routed = false;
+      clear_visited_marks();
+      break;
+    }
+  }
+
+  if ( has_routed )
+  {
+    net.route_nodes = target_nodes;
+  } else {
+    routed_nets.resize( routed_nets.size()-1 );
+  }
+  clear_net_marks();
 }
 
-bool Router::find_path( const Node& _source, const Node& _target )
+uint32_t Router::positive_diff( const uint32_t& _a, const uint32_t& _b )
+{
+  return (_a > _b) ? (_a - _b) : (_b - _a);
+}
+
+uint32_t Router::manh_distance( const Node& _n1, const Node& _n2 )
+{
+  return positive_diff( grid.axis_x[_n1.x], grid.axis_x[_n2.x] )
+    + positive_diff( grid.axis_y[_n1.y], grid.axis_y[_n2.y] );
+}
+
+bool Router::find_target( const Node& _source, Node& _target )
 {
   /* Variables */
-  Path path;
   VisitedNode node;
   VisitedNode node_q;
+  bool target_reached = false;
 
   /* Initializing */
-  path.source = _source;
-  path.target = _target;
-
   node = _source;
   node.cost = 0;
 
@@ -34,10 +108,21 @@ bool Router::find_path( const Node& _source, const Node& _target )
 
     visited_nodes.push_back( node );
 
+
+    /// Initialize or update the target node if a target node is reached.
+    if ( grid.nodes[node.l][node.y][node.x].target() )
+    {
+      if ( !target_reached
+        || node.cost < grid.nodes[_target.l][_target.y][_target.x].cost )
+        _target = node;
+      target_reached = true;
+    }
+
     /// If no better solution exists, return the function.
     /// Since the cost of every node is initialized to UINT32_MAX, the condition
     /// is only true when the target node is visited.
-    if ( node.cost >= grid.nodes[_target.l][_target.y][_target.x].cost )
+    if ( target_reached &&
+      node.cost >= grid.nodes[_target.l][_target.y][_target.x].cost )
       return true;
 
     /// Propagate in six directions
@@ -101,26 +186,19 @@ bool Router::find_path( const Node& _source, const Node& _target )
       }
     }
   }
-  /// Return true if the target is visited.
-  return grid.nodes[_target.l][_target.y][_target.x].visited();
+  /// Return true if the target is reached.
+  return target_reached;
 }
 
 void Router::backtrack( const Node& _source, const Node& _target )
 {
-  /* Variables */
-  Node node;
-  Path path;
-
-  /* Initializing */
-  node = _target;
-
-  path.nodes.clear();
+  Node node = _target;
 
   /** Backtracking **/
   while ( node != _source )
   {
-    path.nodes.push_back( node );
-    grid.nodes[node.l][node.y][node.x].set_routed( 1 );
+    grid.nodes[node.l][node.y][node.x].set_target( 1 );
+    target_nodes.push_back( node );
 
     switch ( grid.nodes[node.l][node.y][node.x].direction() )
     {
@@ -144,16 +222,12 @@ void Router::backtrack( const Node& _source, const Node& _target )
         break;
     }
   }
-  grid.nodes[_source.l][_source.y][_source.x].set_routed( 1 );
-  path.nodes.push_back( _source );
-
-  routed_paths.push_back( path );
-  return;
+  grid.nodes[_source.l][_source.y][_source.x].set_target( 1 );
+  target_nodes.push_back( node );
 }
 
-void Router::clear_marks( void )
+void Router::clear_visited_marks( void )
 {
-  /* Variables */
   Node node;
 
   /** Reset the grid **/
@@ -172,4 +246,14 @@ void Router::clear_marks( void )
     grid.nodes[node.l][node.y][node.x].set_visited( 0 );
   }
   visited_nodes.clear();
+}
+
+void Router::clear_net_marks( void )
+{
+  for ( const auto& node : target_nodes )
+  {
+    grid.nodes[node.l][node.y][node.x].set_routed( 1 );
+    grid.nodes[node.l][node.y][node.x].set_target( 0 );
+  }
+  target_nodes.clear();
 }

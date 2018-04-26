@@ -28,13 +28,19 @@ public:
   bool routed( void );
   void set_routed( const bool& _flag );
 
+  bool source( void );
+  void set_source( const bool& _flag );
+
+  bool target( void );
+  void set_target( const bool& _flag );
+
   uint8_t direction( void );
   void set_direction( const uint8_t& _dir );
   void clear_direction( void );
 
 private:
   /// Flags for routing (4-byte in size)
-  std::bitset<6> rt_flags = 0;
+  std::bitset<8> rt_flags = 0;
   /*************************************************************/
   /** Bit Assignment                                          **/
   /** <Bit>  <Flag>                                           **/
@@ -45,6 +51,8 @@ private:
   /**   3   -|- from node with higher(011)/lower(010) y-value **/
   /**   4   -|  from node with higher(101)/lower(100) x-value **/
   /**   5    routed by another net                            **/
+  /**   6    source node                                      **/
+  /**   7    target node                                      **/
   /*************************************************************/
 };
 
@@ -134,15 +142,21 @@ public:
   VisitedNode( const Node& _node ) : Node( _node ) { }
 };
 
-struct Path
+struct Net
 {
 public:
   /* Variables */
-  Node source;
-  Node target;
+  std::vector<Node> pins;
+  std::vector<Node> route_nodes;
 
-  /// Nodes on the path including the source and the target
-  std::vector<Node> nodes;
+  /* Constructors */
+  Net( void ) { }
+  Net( const Node& );
+  Net( const std::vector<Node>& );
+
+  /* Functions */
+  void add_route_node( const Node& _node );
+  void add_route_nodes( const std::vector<Node>& _nodes );
 };
 
 struct RoutingOrder
@@ -157,21 +171,28 @@ class Router
 public:
   /* Variables */
   Grid grid;
-  std::vector<Path> routed_paths;
+  std::vector<Net> routed_nets;
 
   /* Functions */
-  void add_path( const Node& _source, const Node& _target );
+  void add_net( const std::vector<Node>& _pins );
 
 private:
   /* Variables */
   std::priority_queue<VisitedNode, std::vector<VisitedNode>, RoutingOrder>
     routing_queue;
   std::vector<Node> visited_nodes;
+  std::vector<Node> target_nodes;
 
   /* Functions */
-  bool find_path( const Node& _source, const Node& _target );
+  /** Utilities **/
+  uint32_t positive_diff( const uint32_t&, const uint32_t& );
+  uint32_t manh_distance( const Node&, const Node& );
+
+  /** Maze Routing **/
+  bool find_target( const Node& _source, Node& target );
   void backtrack( const Node& _source, const Node& _target );
-  void clear_marks( void );
+  void clear_visited_marks( void );
+  void clear_net_marks( void );
 };
 
 #endif
