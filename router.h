@@ -28,6 +28,9 @@ public:
   bool routed( void );
   void set_routed( const bool& _flag );
 
+  bool pin( void );
+  void set_pin( const bool& _flag );
+
   bool source( void );
   void set_source( const bool& _flag );
 
@@ -40,7 +43,7 @@ public:
 
 private:
   /// Flags for routing (4-byte in size)
-  std::bitset<8> rt_flags = 0;
+  std::bitset<9> rt_flags = 0;
   /*************************************************************/
   /** Bit Assignment                                          **/
   /** <Bit>  <Flag>                                           **/
@@ -51,8 +54,9 @@ private:
   /**   3   -|- from node with higher(011)/lower(010) y-value **/
   /**   4   -|  from node with higher(101)/lower(100) x-value **/
   /**   5    routed by another net                            **/
-  /**   6    source node                                      **/
-  /**   7    target node                                      **/
+  /**   6    pin node                                         **/
+  /**   7    source node                                      **/
+  /**   8    target node                                      **/
   /*************************************************************/
 };
 
@@ -181,7 +185,6 @@ private:
   std::priority_queue<VisitedNode, std::vector<VisitedNode>, RoutingOrder>
     routing_queue;
   std::vector<Node> visited_nodes;
-  std::vector<Node> target_nodes;
 
   /* Functions */
   /** Utilities **/
@@ -189,10 +192,13 @@ private:
   uint32_t manh_distance( const Node&, const Node& );
 
   /** Maze Routing **/
-  bool find_target( const Node& _source, Node& target );
-  void backtrack( const Node& _source, const Node& _target );
+  /// Find a path to any target node and save the reached node
+  bool find_target( const Node& _source, Node& _target );
+  /// Backtrack the route and add the add the route nodes to _nodes
+  void backtrack( const Node& _source, const Node& _target,
+    std::vector<Node>& _nodes );
   void clear_visited_marks( void );
-  void clear_net_marks( void );
+  void clear_net_marks( const Net& _net );
 };
 
 #endif

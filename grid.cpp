@@ -49,7 +49,7 @@ uint32_t Grid::get_y_index( const uint32_t& _y )
 
 bool Grid::is_preferred_direction( const uint8_t& _l, const uint8_t& _dir )
 {
-  return ((_dir >> 1) == preferred_direction[layers[_l]]);
+  return ((_dir >> 1) == 0) || ((_dir >> 1) == preferred_direction[layers[_l]]);
 }
 
 void Grid::resize_grid_nodes( void )

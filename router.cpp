@@ -4,6 +4,13 @@ void Router::add_net( const std::vector<Node>& _pins )
 {
   routed_nets.resize( routed_nets.size() + 1 );
   Net& net = routed_nets.back();
+  std::vector<Node>& route_nodes = net.route_nodes;
+
+  /* Add pins to the grid */
+  for ( const auto& pin : _pins )
+  {
+    grid.nodes[pin.l][pin.y][pin.x].set_pin( 1 );
+  }
 
   /** Pin order for routing **/
   std::vector<Node> pin_order;
@@ -29,7 +36,7 @@ void Router::add_net( const std::vector<Node>& _pins )
   /// Prim's algorithm
   uint32_t p = 0;
   pin_selected[0] = 1;
-  while ( pin_order.size() != _pins.size() )
+  while ( pin_order.size() != (_pins.size() - 1) )
   {
     uint32_t next_p = 0;
     uint32_t lowest_dist = UINT32_MAX;
@@ -49,13 +56,14 @@ void Router::add_net( const std::vector<Node>& _pins )
 
   /* Iteratively routing by pin order */
   bool has_routed = true;
-  grid.nodes[_pins[0].l][_pins[0].y][_pins[0].x].set_target( 1 );
+  Node target = _pins[0];
+  grid.nodes[target.l][target.y][target.x].set_target( 1 );
+  route_nodes.push_back( target );
   for ( const auto& source : pin_order )
   {
-    Node target;
     if ( find_target( source, target ) )
     {
-      backtrack( source, target );
+      backtrack( source, target, route_nodes );
       clear_visited_marks();
     } else {
       has_routed = false;
@@ -63,14 +71,10 @@ void Router::add_net( const std::vector<Node>& _pins )
       break;
     }
   }
+  clear_net_marks( net );
 
-  if ( has_routed )
-  {
-    net.route_nodes = target_nodes;
-  } else {
+  if ( !has_routed )
     routed_nets.resize( routed_nets.size()-1 );
-  }
-  clear_net_marks();
 }
 
 uint32_t Router::positive_diff( const uint32_t& _a, const uint32_t& _b )
@@ -190,7 +194,8 @@ bool Router::find_target( const Node& _source, Node& _target )
   return target_reached;
 }
 
-void Router::backtrack( const Node& _source, const Node& _target )
+void Router::backtrack( const Node& _source, const Node& _target,
+  std::vector<Node>& _nodes )
 {
   Node node = _target;
 
@@ -198,7 +203,9 @@ void Router::backtrack( const Node& _source, const Node& _target )
   while ( node != _source )
   {
     grid.nodes[node.l][node.y][node.x].set_target( 1 );
-    target_nodes.push_back( node );
+
+    if ( node != _target )
+      _nodes.push_back( node );
 
     switch ( grid.nodes[node.l][node.y][node.x].direction() )
     {
@@ -223,7 +230,7 @@ void Router::backtrack( const Node& _source, const Node& _target )
     }
   }
   grid.nodes[_source.l][_source.y][_source.x].set_target( 1 );
-  target_nodes.push_back( node );
+  _nodes.push_back( node );
 }
 
 void Router::clear_visited_marks( void )
@@ -248,12 +255,11 @@ void Router::clear_visited_marks( void )
   visited_nodes.clear();
 }
 
-void Router::clear_net_marks( void )
+void Router::clear_net_marks( const Net& _net )
 {
-  for ( const auto& node : target_nodes )
+  for ( const auto& node : _net.route_nodes )
   {
     grid.nodes[node.l][node.y][node.x].set_routed( 1 );
     grid.nodes[node.l][node.y][node.x].set_target( 0 );
   }
-  target_nodes.clear();
 }
