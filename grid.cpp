@@ -3,8 +3,10 @@
 void Grid::set_axis_x( const std::vector<uint32_t>& _axis_x )
 {
   axis_x = _axis_x;
-  size_x = _axis_x.size();
   std::sort( axis_x.begin(), axis_x.end() );
+  auto it = std::unique( axis_x.begin(), axis_x.end() );
+  axis_x.resize( std::distance( axis_x.begin(), it ) );
+  size_x = axis_x.size();
   calculate_grid_width_x();
   resize_grid_nodes();
 }
@@ -12,8 +14,10 @@ void Grid::set_axis_x( const std::vector<uint32_t>& _axis_x )
 void Grid::set_axis_y( const std::vector<uint32_t>& _axis_y )
 {
   axis_y = _axis_y;
-  size_y = _axis_y.size();
   std::sort( axis_y.begin(), axis_y.end() );
+  auto it = std::unique( axis_y.begin(), axis_y.end() );
+  axis_y.resize( std::distance( axis_y.begin(), it ) );
+  size_y = axis_y.size();
   calculate_grid_width_y();
   resize_grid_nodes();
 }
