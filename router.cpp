@@ -5,42 +5,49 @@ void Router::add_net( const std::vector<Node>& _pins )
   routed_nets.resize( routed_nets.size() + 1 );
   Net& net = routed_nets.back();
   std::vector<Node>& route_nodes = net.route_nodes;
+  std::vector<Node>& pins = net.pins;
+
+  /* Convert pins with coordinates to pins with grid indices */
+  for ( const auto& pin : _pins )
+  {
+    pins.push_back( grid.convert_to_index( pin ) );
+  }
 
   /* Add pins to the grid */
-  for ( const auto& pin : _pins )
+  for ( const auto& pin : pins )
   {
     grid.nodes[pin.l][pin.y][pin.x].set_pin( 1 );
   }
 
   /** Pin order for routing **/
   std::vector<Node> pin_order;
-  std::vector<bool> pin_selected( _pins.size(), 0 );
+  std::vector<bool> pin_selected( pins.size(), 0 );
   std::vector< std::vector<uint32_t> > dist_matrix;
 
   /* Set pin order */
   /// Initialize the adjacent matrix for Prim's algorithm
-  dist_matrix.resize( _pins.size() );
+  dist_matrix.resize( pins.size() );
   for ( auto& row : dist_matrix)
   {
-    row.resize( _pins.size() );
+    row.resize( pins.size() );
   }
 
-  for ( auto i = 0; i < _pins.size(); ++i )
+  for ( auto i = 0; i < pins.size(); ++i )
   {
-    for ( auto j = 0; j < _pins.size(); ++j )
+    for ( auto j = 0; j < pins.size(); ++j )
     {
-      dist_matrix[i][j] = manh_distance( _pins[i], _pins[j] );
+      dist_matrix[i][j] = manh_distance( pins[i], pins[j] );
     }
   }
 
   /// Prim's algorithm
   uint32_t p = 0;
   pin_selected[0] = 1;
-  while ( pin_order.size() != (_pins.size() - 1) )
+  while ( pin_order.size() != (pins.size() - 1) )
   {
     uint32_t next_p = 0;
     uint32_t lowest_dist = UINT32_MAX;
-    for ( auto i = 0; i < _pins.size(); ++i )
+    for ( auto i = 0; i < pins.size(); ++i )
     {
       if ( pin_selected[i] ) continue;
       if ( dist_matrix[p][i] < lowest_dist )
@@ -49,14 +56,14 @@ void Router::add_net( const std::vector<Node>& _pins )
         next_p = i;
       }
     }
-    pin_order.push_back( _pins[next_p] );
+    pin_order.push_back( pins[next_p] );
     pin_selected[next_p] = 1;
     p = next_p;
   }
 
   /* Iteratively routing by pin order */
   bool has_routed = true;
-  Node target = _pins[0];
+  Node target = pins[0];
   grid.nodes[target.l][target.y][target.x].set_target( 1 );
   route_nodes.push_back( target );
   for ( const auto& source : pin_order )

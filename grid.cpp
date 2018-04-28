@@ -28,23 +28,22 @@ void Grid::set_layers( const std::vector<bool>& _layers )
 void Grid::add_obstacle( const uint8_t& _l, const uint32_t& _ax,
   const uint32_t& _ay, const uint32_t& _bx, const uint32_t& _by )
 {
-  for ( auto y = _ay; y <= _by; ++y )
+  /// Convert point coordinates to grid indices
+  auto ax = get_x_index( _ax );
+  auto ay = get_y_index( _ay );
+
+  for ( auto y = ay; y < size_y && axis_y[y] <= _by; ++y )
   {
-    for ( auto x = _ax; x <= _bx; ++x )
+    for ( auto x = ax; x < size_x && axis_x[x] <= _bx; ++x )
     {
       nodes[_l][y][x].set_obstacle( 1 );
     }
   }
 }
 
-uint32_t Grid::get_x_index( const uint32_t& _x )
+Node Grid::convert_to_index( const Node& _node )
 {
-  return std::upper_bound( axis_x.begin(), axis_x.end(), _x ) - axis_x.begin();
-}
-
-uint32_t Grid::get_y_index( const uint32_t& _y )
-{
-  return std::upper_bound( axis_y.begin(), axis_y.end(), _y ) - axis_y.begin();
+  return Node( _node.l, get_x_index(_node.x), get_y_index(_node.y) );
 }
 
 bool Grid::is_preferred_direction( const uint8_t& _l, const uint8_t& _dir )
@@ -81,4 +80,14 @@ void Grid::calculate_grid_width_y( void )
   {
     axis_y_w[i-1] = axis_y[i] - axis_y[i-1];
   }
+}
+
+uint32_t Grid::get_x_index( const uint32_t& _x )
+{
+  return std::lower_bound( axis_x.begin(), axis_x.end(), _x ) - axis_x.begin();
+}
+
+uint32_t Grid::get_y_index( const uint32_t& _y )
+{
+  return std::lower_bound( axis_y.begin(), axis_y.end(), _y ) - axis_y.begin();
 }

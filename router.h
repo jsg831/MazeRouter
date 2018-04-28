@@ -60,6 +60,39 @@ private:
   /*************************************************************/
 };
 
+struct Node
+{
+public:
+  /* Variables */
+  /// The layer, x-, and y-layer index of the node in a grid
+  uint8_t l = 0;
+  uint32_t x = 0;
+  uint32_t y = 0;
+
+  /* Constructors */
+  Node( void ) { }
+  Node( const uint8_t& _l, const uint32_t& _x, const uint32_t& _y ) :
+    l(_l), x(_x), y(_y) { }
+
+  /* Comparison */
+  friend bool operator==( const Node& _lhs, const Node& _rhs )
+    { return (_lhs.l == _rhs.l) && (_lhs.x == _rhs.x) && (_lhs.y == _rhs.y); }
+  friend bool operator!=( const Node& _lhs, const Node& _rhs )
+    { return !(_lhs == _rhs); }
+};
+
+struct VisitedNode : public Node
+{
+public:
+  /* Variables */
+  /// The distance from the source node
+  uint32_t cost = 0;
+
+  /* Constructors */
+  VisitedNode( void ) { }
+  VisitedNode( const Node& _node ) : Node( _node ) { }
+};
+
 class Grid
 {
 public:
@@ -99,9 +132,8 @@ public:
   void add_obstacle( const uint8_t& _l, const uint32_t& _ax,
     const uint32_t& _ay, const uint32_t& _bx, const uint32_t& _by );
 
-  /** X-/Y-Coordinate to Index Conversion **/
-  uint32_t get_x_index( const uint32_t& _x );
-  uint32_t get_y_index( const uint32_t& _y );
+  /** Node with coordinates to node with grid indices conversion **/
+  Node convert_to_index( const Node& _node );
 
   /** Preferred Direction **/
   bool is_preferred_direction( const uint8_t& _l, const uint8_t& _dir );
@@ -111,39 +143,8 @@ private:
   void resize_grid_nodes( void );
   void calculate_grid_width_x( void );
   void calculate_grid_width_y( void );
-};
-
-struct Node
-{
-public:
-  /* Variables */
-  /// The layer, x-, and y-layer index of the node in a grid
-  uint8_t l = 0;
-  uint32_t x = 0;
-  uint32_t y = 0;
-
-  /* Constructors */
-  Node( void ) { }
-  Node( const uint8_t& _l, const uint32_t& _x, const uint32_t& _y ) :
-    l(_l), x(_x), y(_y) { }
-
-  /* Comparison */
-  friend bool operator==( const Node& _lhs, const Node& _rhs )
-    { return (_lhs.l == _rhs.l) && (_lhs.x == _rhs.x) && (_lhs.y == _rhs.y); }
-  friend bool operator!=( const Node& _lhs, const Node& _rhs )
-    { return !(_lhs == _rhs); }
-};
-
-struct VisitedNode : public Node
-{
-public:
-  /* Variables */
-  /// The distance from the source node
-  uint32_t cost = 0;
-
-  /* Constructors */
-  VisitedNode( void ) { }
-  VisitedNode( const Node& _node ) : Node( _node ) { }
+  uint32_t get_x_index( const uint32_t& _x );
+  uint32_t get_y_index( const uint32_t& _y );
 };
 
 struct Net
